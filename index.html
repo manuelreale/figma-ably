@@ -1,24 +1,120 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Ably Sender</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ably Slider Sender</title>
   <script src="https://cdn.ably.io/lib/ably.min-1.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: #f7f7f7;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    #slider {
+      width: 100%;
+      max-width: 600px;
+      height: 40px;
+      margin: 1rem 0;
+      -webkit-appearance: none;
+      background: #ddd;
+      border-radius: 10px;
+    }
+
+    #slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: #007bff;
+      cursor: pointer;
+      border: none;
+      margin-top: -5px;
+    }
+
+    #slider::-moz-range-thumb {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: #007bff;
+      cursor: pointer;
+      border: none;
+    }
+
+    #value {
+      font-size: 2rem;
+      margin-top: 0.5rem;
+      color: #333;
+    }
+
+    @media (max-width: 480px) {
+      #slider {
+        height: 50px;
+      }
+
+      #slider::-webkit-slider-thumb,
+      #slider::-moz-range-thumb {
+        width: 40px;
+        height: 40px;
+      }
+
+      #value {
+        font-size: 2.5rem;
+      }
+    }
+  </style>
 </head>
 <body>
+  <h1>Send Slider Value via Ably</h1>
   <input type="range" min="0" max="100" value="50" id="slider" />
-  <span id="value">50</span>
+  <div id="value">50</div>
 
   <script>
-    const ably = new Ably.Realtime('4imbYg.LR7ufQ:SSWHUCCXIWxdGHDFISK-e_KyoItFOqYHSm3Jq-Cosnw');
-    const channel = ably.channels.get('slider-sync');
-
     const slider = document.getElementById('slider');
     const valueDisplay = document.getElementById('value');
 
+    const ably = new Ably.Realtime('4imbYg.LR7ufQ:SSWHUCCXIWxdGHDFISK-e_KyoItFOqYHSm3Jq-Cosnw');
+    const channel = ably.channels.get('slider-sync');
+
+    let lastSent = 0;
+    const throttleInterval = 1000 / 30;
+
+    const publishValue = (val) => {
+      channel.publish('slider', { value: val });
+    };
+
+    // Update UI and throttle-send
     slider.addEventListener('input', () => {
+      const now = Date.now();
       const val = slider.value;
       valueDisplay.textContent = val;
-      channel.publish('slider', { value: val });
+
+      if (now - lastSent >= throttleInterval) {
+        lastSent = now;
+        publishValue(val);
+      }
+    });
+
+    // Ensure final value is sent on release
+    slider.addEventListener('change', () => {
+      publishValue(slider.value);
+    });
+
+    // Send initial value on page load
+    window.addEventListener('load', () => {
+      valueDisplay.textContent = slider.value;
+      publishValue(slider.value);
     });
   </script>
 </body>
