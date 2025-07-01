@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Ably Sender</title>
+  <script src="https://cdn.ably.io/lib/ably.min-1.js"></script>
+</head>
+<body>
+  <input type="range" min="0" max="100" value="50" id="slider" />
+  <span id="value">50</span>
+
+  <script>
+    const ably = new Ably.Realtime('4imbYg.LR7ufQ:SSWHUCCXIWxdGHDFISK-e_KyoItFOqYHSm3Jq-Cosnw');
+    const channel = ably.channels.get('slider-sync');
+
+    const slider = document.getElementById('slider');
+    const valueDisplay = document.getElementById('value');
+
+    slider.addEventListener('input', () => {
+      const val = slider.value;
+      valueDisplay.textContent = val;
+      channel.publish('slider', { value: val });
+    });
+  </script>
+</body>
+</html>
